@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Repro Wizard - Options</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #05070a;
+      color: #f5f5f5;
+    }
+    h1 {
+      font-size: 1.2rem;
+      margin: 0 0 10px;
+    }
+    h2 {
+      font-size: 1rem;
+      margin: 16px 0 6px;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-size: 0.9rem;
+    }
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      max-width: 480px;
+      padding: 6px 8px;
+      margin-top: 4px;
+      border-radius: 4px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #f9fafb;
+      box-sizing: border-box;
+    }
+    .row {
+      margin-top: 8px;
+      font-size: 0.85rem;
+    }
+    button {
+      margin-top: 10px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid #3b82f6;
+      background: #1d4ed8;
+      color: #f9fafb;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    button:active {
+      transform: translateY(1px);
+    }
+    button.small {
+      padding: 4px 10px;
+      font-size: 0.8rem;
+    }
+    button.danger {
+      border-color: #f97373;
+      background: #b91c1c;
+    }
+    #status {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      opacity: 0.9;
+    }
+    .small {
+      font-size: 0.8rem;
+      opacity: 0.8;
+      margin-top: 6px;
+      max-width: 640px;
+    }
+    table {
+      border-collapse: collapse;
+      margin-top: 6px;
+      width: 100%;
+      max-width: 640px;
+      font-size: 0.85rem;
+    }
+    th, td {
+      border: 1px solid #1f2937;
+      padding: 4px 6px;
+      text-align: left;
+    }
+    th {
+      background: #020617;
+    }
+    td input, td select {
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 0.8rem;
+      padding: 4px 6px;
+      border-radius: 4px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #f9fafb;
+    }
+    .actions-cell {
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <h1>Bug Test Generator – Options</h1>
+
+  <section>
+    <h2>API keys</h2>
+
+    <label>
+      OpenAI API key
+      <input id="apiKey" type="password" autocomplete="off" />
+    </label>
+    <div class="small">
+      Used when you select models with provider “OpenAI”.
+      This must be an <strong>OpenAI API</strong> key (from platform.openai.com),
+      not just a ChatGPT Plus/Pro subscription.
+    </div>
+
+    <label>
+      Gemini API key
+      <input id="geminiApiKey" type="password" autocomplete="off" />
+    </label>
+    <div class="small">
+      Used when you select models with provider “Google Gemini”.
+      Get this from <strong>Google AI Studio → API Keys</strong> (aistudio.google.com). :contentReference[oaicite:4]{index=4}
+    </div>
+
+    <div class="row">
+      <label>
+        <input id="autoDownload" type="checkbox" />
+        Also download the generated HTML file automatically
+      </label>
+    </div>
+  </section>
+
+  <section>
+    <h2>Models (right-click submenu)</h2>
+    <div class="small">
+      These entries appear under “Generate test page” when you right‑click a
+      selection. Each entry is:
+      <ul>
+        <li><strong>Menu label</strong> – what you see in the context menu.</li>
+        <li><strong>Model ID</strong> – the provider’s model ID
+          (e.g. <code>gpt-4.1</code> or <code>gemini-2.5-flash</code>).</li>
+        <li><strong>Provider</strong> – OpenAI or Google Gemini.</li>
+      </ul>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Menu label</th>
+          <th>Model ID</th>
+          <th>Provider</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="modelRows"></tbody>
+    </table>
+
+    <button id="addModelBtn" class="small">+ Add model</button>
+  </section>
+
+  <section>
+    <button id="saveBtn">Save all settings</button>
+    <div id="status"></div>
+  </section>
+
+  <script src="options.js"></script>
+</body>
+</html>
