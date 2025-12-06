@@ -128,11 +128,19 @@
       Get this from <strong>Google AI Studio → API Keys</strong> (aistudio.google.com). :contentReference[oaicite:4]{index=4}
     </div>
 
-    <div class="row">
-      <label>
-        <input id="autoDownload" type="checkbox" />
-        Also download the generated HTML file automatically
-      </label>
+    <label>
+      Download folder path (relative to browser's Downloads folder)
+      <input id="downloadPath" type="text" placeholder="repro-wizard" required />
+    </label>
+    <div class="small">
+      Generated HTML files will be automatically saved to this subfolder within your Downloads folder.
+      <br>
+      Examples: <code>repro-wizard</code> or <code>bug-tests/firefox</code>.
+      <br>
+      Leave empty to save directly in the Downloads folder. The folder will be created automatically if it doesn't exist.
+      <br><br>
+      <strong>Note:</strong> After download completes, an info page will show the file path with a button to reveal the file.
+      Browser security prevents extensions from automatically opening downloaded files, but the blob URL will open in a tab for immediate preview.
     </div>
   </section>
 

@@ -26,7 +26,7 @@ const DEFAULT_MODELS = [
 
 const apiKeyInput = document.getElementById("apiKey");
 const geminiApiKeyInput = document.getElementById("geminiApiKey");
-const autoDownloadInput = document.getElementById("autoDownload");
+const downloadPathInput = document.getElementById("downloadPath");
 const statusEl = document.getElementById("status");
 const saveBtn = document.getElementById("saveBtn");
 
@@ -102,13 +102,13 @@ async function loadSettings() {
   const data = await ext.storage.local.get({
     openaiApiKey: "",
     geminiApiKey: "",
-    autoDownload: true,
+    downloadPath: "repro-wizard",
     models: DEFAULT_MODELS
   });
 
   apiKeyInput.value = data.openaiApiKey || "";
   geminiApiKeyInput.value = data.geminiApiKey || "";
-  autoDownloadInput.checked = !!data.autoDownload;
+  downloadPathInput.value = data.downloadPath || "repro-wizard";
 
   renderModels(data.models);
 }
@@ -144,13 +144,13 @@ function collectModelsFromDOM() {
 async function saveSettings() {
   const key = apiKeyInput.value.trim();
   const geminiKey = geminiApiKeyInput.value.trim();
-  const autoDownload = autoDownloadInput.checked;
+  const downloadPath = downloadPathInput.value.trim() || "repro-wizard";
   const models = collectModelsFromDOM();
 
   await ext.storage.local.set({
     openaiApiKey: key,
     geminiApiKey: geminiKey,
-    autoDownload,
+    downloadPath,
     models
   });
 

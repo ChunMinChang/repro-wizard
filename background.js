@@ -151,7 +151,7 @@ ext.contextMenus.onClicked.addListener(async (info, tab) => {
     const settings = await ext.storage.local.get({
       openaiApiKey: "",
       geminiApiKey: "",
-      autoDownload: true
+      downloadPath: "repro-wizard"
     });
 
     // Provider-specific key checks
@@ -188,7 +188,7 @@ ext.contextMenus.onClicked.addListener(async (info, tab) => {
       return;
     }
 
-    await openHtmlInNewTab(cleanedHtml, settings.autoDownload);
+    await openHtmlInNewTab(cleanedHtml, settings);
   } catch (err) {
     console.error("[ReproWizard] Error:", err);
     await openInfoTab(
@@ -366,27 +366,108 @@ async function generateHtmlWithGemini(apiKey, modelSpec, bugReportText) {
 /**
  * Open generated HTML in a new tab; optionally download as file too.
  */
-async function openHtmlInNewTab(html, autoDownload) {
+async function openHtmlInNewTab(html, settings) {
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
 
-  await ext.tabs.create({ url });
+  // Always open the blob URL first for immediate preview
+  const tab = await ext.tabs.create({ url });
 
-  if (autoDownload && ext.downloads && ext.downloads.download) {
+  // Always download - get path from settings or use default
+  const downloadPath = (typeof settings === 'object' && settings.downloadPath) || "repro-wizard";
+
+  if (ext.downloads && ext.downloads.download) {
     const fileName =
       "bug-test-" +
       new Date().toISOString().replace(/[:.]/g, "-") +
       ".html";
+    const fullPath = downloadPath ? downloadPath + "/" + fileName : fileName;
     try {
-      await ext.downloads.download({
+      const downloadId = await ext.downloads.download({
         url,
-        filename: fileName,
+        filename: fullPath,
         saveAs: false
       });
+
+      // Wait for download to complete and get the file path
+      const downloadItem = await waitForDownloadComplete(downloadId);
+
+      if (downloadItem && downloadItem.filename) {
+        // Show user where the file was saved
+        const filePath = downloadItem.filename;
+        const fileUrl = "file://" + (filePath.startsWith("/") ? filePath : "/" + filePath);
+
+        const infoHtml =
+          "<!doctype html>" +
+          "<html><head><meta charset='utf-8'><title>File Downloaded</title>" +
+          "<style>body{font-family:sans-serif;padding:20px;background:#111;color:#eee;max-width:700px;line-height:1.6;}" +
+          "h1{font-size:20px;color:#4ade80;margin-bottom:16px;}" +
+          ".path-box{background:#1e3a5f;padding:16px;border-radius:6px;margin:20px 0;border-left:4px solid #3b82f6;}" +
+          ".path{background:#0a1628;padding:12px;border-radius:4px;margin-top:8px;word-break:break-all;font-family:monospace;font-size:14px;user-select:all;cursor:text;}" +
+          ".instruction{background:#1e293b;padding:16px;border-radius:6px;margin:20px 0;}" +
+          ".instruction h2{font-size:16px;margin:0 0 12px;color:#fbbf24;}" +
+          ".instruction ol{margin:8px 0;padding-left:24px;}" +
+          ".instruction li{margin:6px 0;}" +
+          "code{background:#334155;padding:2px 6px;border-radius:3px;font-size:13px;}" +
+          "</style>" +
+          "</head><body>" +
+          "<h1>✓ Test page downloaded successfully</h1>" +
+          "<div class='path-box'>" +
+          "<strong>Full file path:</strong>" +
+          "<div class='path'>" + escapeHtml(fileUrl) + "</div>" +
+          "</div>" +
+          "<div class='instruction'>" +
+          "<h2>To open the downloaded file:</h2>" +
+          "<ol>" +
+          "<li>Copy the full file path above (click and select all)</li>" +
+          "<li>Open a new tab in Firefox (<code>Ctrl+T</code> or <code>Cmd+T</code>)</li>" +
+          "<li>Paste the path into the address bar</li>" +
+          "<li>Press Enter</li>" +
+          "</ol>" +
+          "<p><strong>Note:</strong> The file has full permissions and no security restrictions, unlike blob URLs.</p>" +
+          "</div>" +
+          "<p><strong>Tip:</strong> The preview tab with the blob URL has been kept open for immediate testing.</p>" +
+          "</body></html>";
+
+        // Open info page in a new tab
+        await ext.tabs.create({ url: URL.createObjectURL(new Blob([infoHtml], { type: "text/html" })) });
+      }
     } catch (e) {
       console.warn("[ReproWizard] download failed:", e);
     }
   }
+}
+
+/**
+ * Wait for a download to complete and return the download item.
+ */
+function waitForDownloadComplete(downloadId) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      ext.downloads.onChanged.removeListener(listener);
+      reject(new Error('Download timeout after 30 seconds'));
+    }, 30000);
+
+    const listener = (delta) => {
+      if (delta.id === downloadId) {
+        if (delta.state && delta.state.current === 'complete') {
+          clearTimeout(timeout);
+          ext.downloads.onChanged.removeListener(listener);
+
+          // Get the full download item info
+          ext.downloads.search({ id: downloadId }).then((items) => {
+            resolve(items && items[0] ? items[0] : null);
+          }).catch(reject);
+        } else if (delta.state && delta.state.current === 'interrupted') {
+          clearTimeout(timeout);
+          ext.downloads.onChanged.removeListener(listener);
+          reject(new Error('Download was interrupted'));
+        }
+      }
+    };
+
+    ext.downloads.onChanged.addListener(listener);
+  });
 }
 
 /**
@@ -409,7 +490,7 @@ async function openInfoTab(title, bodyText) {
     "</pre>" +
     "</body></html>";
 
-  await openHtmlInNewTab(html, false);
+  await openHtmlInNewTab(html, { downloadPath: null });
 }
 
 function escapeHtml(str) {
